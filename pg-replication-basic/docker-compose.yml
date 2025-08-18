@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  primary:
+    image: postgres:15
+    container_name: pg_primary
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./primary/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - primary_data:/var/lib/postgresql/data
+
+  replica:
+    image: postgres:15
+    container_name: pg_replica
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mydb
+    command: >
+      bash -c "
+        rm -rf /var/lib/postgresql/data/* &&
+        PGPASSWORD=postgres pg_basebackup -h primary -D /var/lib/postgresql/data -U postgres -Fp -Xs -P -R &&
+        echo 'hot_standby = on' >> /var/lib/postgresql/data/postgresql.conf &&
+        exec docker-entrypoint.sh postgres
+      "
+    depends_on:
+      - primary
+    ports:
+      - "5433:5432"
+    volumes:
+      - replica_data:/var/lib/postgresql/data
+
+volumes:
+  primary_data:
+  replica_data:
