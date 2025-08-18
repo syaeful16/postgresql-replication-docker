@@ -1,0 +1,69 @@
+version: "3.9"
+
+services:
+  etcd:
+    image: bitnami/etcd:3
+    container_name: etcd
+    restart: unless-stopped
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+    ports:
+      - "2379:2379"
+    volumes:
+      - etcd_data:/bitnami/etcd
+
+  patroni1:
+    image: ghcr.io/patroni/patroni:latest
+    container_name: patroni1
+    restart: unless-stopped
+    env_file: [ ./env/patroni-node1.env ]
+    depends_on: [ etcd ]
+    ports:
+      - "5432:5432"
+      - "8001:8008"
+    volumes:
+      - patroni1_data:/var/lib/postgresql/data
+
+  patroni2:
+    image: ghcr.io/patroni/patroni:latest
+    container_name: patroni2
+    restart: unless-stopped
+    env_file: [ ./env/patroni-node2.env ]
+    depends_on: [ etcd ]
+    ports:
+      - "5433:5432"
+      - "8002:8008"
+    volumes:
+      - patroni2_data:/var/lib/postgresql/data
+
+  patroni3:
+    image: ghcr.io/patroni/patroni:latest
+    container_name: patroni3
+    restart: unless-stopped
+    env_file: [ ./env/patroni-node3.env ]
+    depends_on: [ etcd ]
+    ports:
+      - "5434:5432"
+      - "8003:8008"
+    volumes:
+      - patroni3_data:/var/lib/postgresql/data
+
+  haproxy:
+    image: haproxy:2.9
+    container_name: pg_haproxy
+    restart: unless-stopped
+    depends_on: [ patroni1, patroni2, patroni3 ]
+    ports:
+      - "5000:5000"   # write (leader only)
+      - "5001:5001"   # read (replicas only)
+      - "8404:8404"   # stats
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+
+volumes:
+  etcd_data:
+  patroni1_data:
+  patroni2_data:
+  patroni3_data:
