@@ -1,5 +1,7 @@
 # PostgreSQL Replication & HA — Docker Examples
 
+# Easy Test
+
 Tiga setup:
 
 1. `pg-replication-basic/` → Primary + Replica (belajar/testing, failover manual)
