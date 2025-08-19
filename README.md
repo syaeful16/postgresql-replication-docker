@@ -1,4 +1,5 @@
 # PostgreSQL Replication & HA — Docker Examples
+# Easy Testing
 
 Tiga setup:
 
